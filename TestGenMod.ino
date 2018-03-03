@@ -128,8 +128,8 @@ void PrintFreq(void)
 
 void showNewData() {
  if (newData == true) {
- Serial.print("This just in ... ");
- Serial.println(receivedChars);
+ //Serial.print("This just in ... ");
+ //Serial.println(receivedChars);
  if (receivedChars[0] == 'M')
  {
   freq += 100000000;
