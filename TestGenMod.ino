@@ -18,9 +18,14 @@
 
 Si5351 si5351;
 
+const byte numChars = 32;
+char receivedChars[numChars]; // an array to store the received data
 
+boolean newData = false;
 
-unsigned long freq =  150000000ULL;              // Change this
+unsigned long freq =  1500000000ULL;              // Change this
+
+uint32_t MHz, KHz, Hz, mHz;
 
 
 
@@ -40,7 +45,7 @@ void setup()
   if(!i2c_found)
   {
     Serial.println("Device not found on I2C bus!");
-    while (1);
+ //   while (1);
   }
 
   Serial.println("OK!");
@@ -56,6 +61,7 @@ void setup()
    si5351.set_freq(freq, SI5351_CLK0);
    si5351.update_status();
   si5351.output_enable(SI5351_CLK0, 1);
+   PrintFreq();
 
 
 
@@ -64,17 +70,9 @@ void setup()
 
 void loop()
 {
- Serial.print(minute());
-  Serial.print(":");
 
-
-  Serial.println(second());
-   Serial.print(":");
-  Serial.println(timeSet);
-
-
- si5351.set_freq(freq, SI5351_CLK0);
-   si5351.update_status();
+  recvWithEndMarker();
+ showNewData();
 
 
    delay(500);
@@ -83,14 +81,82 @@ void loop()
  si5351.set_freq(freq * 2, SI5351_CLK0);
    si5351.update_status();
 
-   delay(500);
-    si5351.output_enable(SI5351_CLK0, 0);
-    
-   delay(500);
-     si5351.output_enable(SI5351_CLK0, 1);
-     
-   delay(500);
+   
  
+}
+
+
+void recvWithEndMarker() {
+ static byte ndx = 0;
+ char endMarker = '\n';
+ char rc;
+ 
+ // if (Serial.available() > 0) {
+           while (Serial.available() > 0 && newData == false) {
+ rc = Serial.read();
+
+ if (rc != endMarker) {
+ receivedChars[ndx] = rc;
+ ndx++;
+ if (ndx >= numChars) {
+ ndx = numChars - 1;
+ }
+ }
+ else {
+ receivedChars[ndx] = '\0'; // terminate the string
+ ndx = 0;
+ newData = true;
+ }
+ }
+}
+
+void PrintFreq(void)
+{
+   MHz = freq / 100000000ULL;
+ KHz = (freq - MHz*100000000)/100000;
+ Hz =  (freq - MHz*100000000 - KHz * 100000)/100;
+ mHz = (freq - MHz*100000000 - KHz * 100000 - Hz *100);
+ Serial.print("MHz ");
+  Serial.print(MHz);
+   Serial.print(" KHz ");
+  Serial.print(KHz);
+   Serial.print(" Hz ");
+  Serial.println(Hz);
+   Serial.print("Frequency ");
+  Serial.println(freq);
+}
+
+void showNewData() {
+ if (newData == true) {
+ Serial.print("This just in ... ");
+ Serial.println(receivedChars);
+ if (receivedChars[0] == 'M')
+ {
+  freq += 100000000;
+ }
+ if (receivedChars[0] == 'm')
+ {
+  freq -= 100000000; 
+ }
+  if (receivedChars[0] == 'K')
+ {
+  freq += 100000;
+ }
+ if (receivedChars[0] == 'k')
+ {
+  freq -= 100000; 
+ }
+   if (receivedChars[0] == 'H')
+ {
+  freq += 100;
+ }
+ if (receivedChars[0] == 'h')
+ {
+  freq -= 100; 
+ }
+ PrintFreq();
+ newData = false;
+ }
 }
 
 
