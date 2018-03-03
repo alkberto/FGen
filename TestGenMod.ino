@@ -15,6 +15,7 @@
 #include "si5351.h"
 #include "Wire.h"
 
+void ChangeFreq(void);
 
 Si5351 si5351;
 
@@ -71,11 +72,12 @@ void setup()
 void loop()
 {
 
-  recvWithEndMarker();
- showNewData();
+ // recvWithEndMarker();
+ ChangeFreq();
+// showNewData();
 
 
-   delay(500);
+   delay(50);
 
    
  si5351.set_freq(freq * 2, SI5351_CLK0);
@@ -85,6 +87,61 @@ void loop()
  
 }
 
+
+void PrintFreq(void)
+{
+   MHz = freq / 100000000ULL;
+ KHz = (freq - MHz*100000000)/100000;
+ Hz =  (freq - MHz*100000000 - KHz * 100000)/100;
+ mHz = (freq - MHz*100000000 - KHz * 100000 - Hz *100);
+ Serial.print("MHz ");
+  Serial.print(MHz);
+   Serial.print(" KHz ");
+  Serial.print(KHz);
+   Serial.print(" Hz ");
+  Serial.println(Hz);
+   Serial.print("Frequency ");
+  Serial.println(freq);
+}
+
+char RXChar() {
+
+ char rc;
+ 
+ // if (Serial.available() > 0) {
+           while (Serial.available() > 0 && newData == false) {
+ rc = Serial.read();
+
+ newData = true;
+return rc;
+  }
+ 
+}
+
+
+void ChangeFreq(void)
+{
+  char CharInput;
+
+  CharInput = RXChar();
+
+  if (newData == true) {
+ Serial.print("This just in ... ");
+ Serial.println(CharInput);
+
+ switch (CharInput)
+ {
+  case 'M': freq += 100000000; break;
+  case 'm': freq -= 100000000; break;
+  case 'K': freq += 100000; break;
+  case 'k': freq -= 100000; break;
+  case 'H': freq += 100; break;
+  case 'h': freq -= 100; break;
+ }
+ PrintFreq();
+ newData = false;
+  }
+}
 
 void recvWithEndMarker() {
  static byte ndx = 0;
@@ -110,21 +167,6 @@ void recvWithEndMarker() {
  }
 }
 
-void PrintFreq(void)
-{
-   MHz = freq / 100000000ULL;
- KHz = (freq - MHz*100000000)/100000;
- Hz =  (freq - MHz*100000000 - KHz * 100000)/100;
- mHz = (freq - MHz*100000000 - KHz * 100000 - Hz *100);
- Serial.print("MHz ");
-  Serial.print(MHz);
-   Serial.print(" KHz ");
-  Serial.print(KHz);
-   Serial.print(" Hz ");
-  Serial.println(Hz);
-   Serial.print("Frequency ");
-  Serial.println(freq);
-}
 
 void showNewData() {
  if (newData == true) {
